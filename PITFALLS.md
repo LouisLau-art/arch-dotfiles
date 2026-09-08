@@ -263,6 +263,41 @@ nmcli con up QINKUNG
 - 只有重启连接（`nmcli con up`）才能让新 DNS 生效，`resolvectl flush-caches` 不够
 - 可以用 `resolvectl status` 确认当前使用的 nameserver 列表
 
+## 17. 飞书桌面端白屏
+
+**问题**：飞书桌面端（`/usr/bin/bytedance-feishu-stable` → `/opt/bytedance/feishu/feishu`）启动后整个窗口白屏，无法登录使用。
+
+**原因**：
+- 飞书客户端内置的 ttnet SDK 硬编码了 DoH（DNS over HTTPS）服务器，走 Google IPv6 地址 `2001:4860:4860::8888:443`
+- 该地址在大陆不可达 → 域名解析失败（netlog 中大量 `-105 NAME_NOT_RESOLVED` / `-109 ADDRESS_UNREACHABLE`）→ 白屏
+- `--disable-features=DnsOverHttps` 等 flag 管不住 ttnet 内部的 DoH，改启动参数没用
+- 问题间歇性：2026-09-08 当天 16:55 重启后由 autostart 正常拉起（无代理 env、临时 iptables 规则已消失），一切正常 → 自愈/间歇性。系统 DNS 已固定 223.5.5.5 + 182.254.42.2（见第 16 章）
+
+**解决**（复发预案，按顺序试）：
+
+a. 临时 REJECT 该 DoH 地址，让 ttnet 的 DoH 快速失败、促其回退系统 DNS（重启即失效，故意不持久化）：
+```bash
+ip6tables -I OUTPUT 1 -d 2001:4860:4860::8888/128 -j REJECT
+```
+
+b. 杀掉飞书后带代理 env 重启（`<当前xauth>` 用 `ls /run/user/1000/xauth_*` 取当前值后替换）：
+```bash
+sudo -u louis env HOME=/home/louis USER=louis LOGNAME=louis XDG_RUNTIME_DIR=/run/user/1000 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus DISPLAY=:1 XAUTHORITY=<当前xauth> WAYLAND_DISPLAY=wayland-0 XDG_SESSION_TYPE=wayland http_proxy=http://127.0.0.1:7897 https_proxy=http://127.0.0.1:7897 ALL_PROXY=socks5://127.0.0.1:7897 setsid /usr/bin/feishu &
+```
+
+c. 官方方案（GUI，最持久）：飞书 设置 → 网络 → 代理，填 `127.0.0.1:7897`
+
+d. 复发时采集 netlog 诊断：
+```bash
+/usr/bin/feishu --log-net-log=/tmp/feishu-netlog.json
+```
+
+**坑**：
+- 白屏根因在 ttnet 内部 DoH，不是系统 DNS——`--disable-features=DnsOverHttps`、改启动 flag 都不一定管用
+- REJECT 规则只临时加（`-I`），不要持久化，避免长期影响正常网络
+- 带 env 重启时环境变量必须齐全（同第 3 章教训），缺 `WAYLAND_DISPLAY`/`XDG_RUNTIME_DIR` 等会起不来或输入法失效
+- 问题会间歇性自愈，复发时先按预案处理，别急着改系统配置
+
 ---
 
 ## 通用教训
