@@ -1,94 +1,91 @@
-# fcitx5 + Rime 输入法配置（dotfiles）
+# Arch Linux + KDE Wayland 新机配置（dotfiles）
 
-本仓库收录本机 fcitx5 + Rime（雾凇 rime-ice）可复现的最小配置骨架，
-换机器时一键恢复同样的中英文混输手感；另附 zellij 终端复用器与
-opencode / oh-my-opencode 的 AI 编程助手配置。
+本仓库收录 Arch Linux + KDE Wayland 新机从零配置的完整记录，
+包含镜像站选择、中文输入法、开发环境、AI 编程助手等全套配置。
 
 ## 目录结构
 
 ```text
 .
-├── README.md
-├── bootstrap.sh            # 全新 Ubuntu 从零安装（系统包+环境变量+自启动+rime-ice上游，再调 install.sh）
-├── install.sh              # 快照恢复脚本（带备份，可重复执行）
-├── .gitignore              # 忽略 Rime 部署产物（build/、*.userdb/、sync/）
+├── README.md                    # 本文档
+├── bootstrap.sh                 # 全新 Arch 从零安装脚本
+├── install.sh                   # 快照恢复脚本（带备份，可重复执行）
+├── .gitignore                   # 忽略 Rime 部署产物
 ├── fcitx5/
-│   ├── config              # fcitx5 全局热键 / 行为
-│   ├── profile             # 输入法分组（Default: rime + keyboard-us）
-│   └── conf/*.conf         # 各插件配置（classicui / clipboard / pinyin 等）
-└── rime/
-    ├── default.custom.yaml     # 关键补丁：候选数 9 + Shift 直输英文
-    ├── rime_ice.custom.yaml    # 雾凇开关默认（switches/@1/reset: 1）
-    └── user.yaml.example       # user.yaml 脱敏结构示例（不直接恢复）
+│   ├── config                   # fcitx5 全局热键 / 行为
+│   ├── profile                  # 输入法分组（Default: rime + keyboard-us）
+│   └── conf/*.conf              # 各插件配置（classicui / clipboard / pinyin 等）
+├── rime/
+│   ├── default.custom.yaml      # 关键补丁：候选数 9 + Shift 直输英文
+│   ├── rime_ice.custom.yaml     # 雾凇开关默认（switches/@1/reset: 1）
+│   └── user.yaml.example        # user.yaml 脱敏结构示例
 ├── zellij/
-│   └── config.kdl              # zellij 终端复用器键位与布局配置
+│   └── config.kdl               # zellij 终端复用器配置
 ├── opencode/
-│   ├── opencode.json.example           # opencode 主配置（已脱敏，需填密钥后改名使用）
-│   └── oh-my-opencode-slim.json        # oh-my-opencode-slim 预设（模型/分工/复用器布局）
-└── oh-my-opencode/
-    └── oh-my-opencode.json.example     # oh-my-opencode 角色模型映射（已脱敏，需填密钥后改名使用）
+│   ├── opencode.json.example    # opencode 主配置（已脱敏）
+│   └── oh-my-opencode-slim.json # oh-my-opencode-slim 预设
+├── oh-my-opencode/
+│   └── oh-my-opencode.json.example # oh-my-opencode 角色模型映射
+├── fontconfig/
+│   └── fonts.conf               # 字体配置（PingFang SC + Maple Mono NF CN）
+└── environment.d/
+    ├── input-method.conf        # fcitx5 环境变量
+    └── serper.conf              # Serper API Key（已脱敏）
 ```
 
 ## 一键恢复
 
 ```bash
-git clone <本仓库地址> ~/fcitx5-rime-dotfiles
-cd ~/fcitx5-rime-dotfiles
+git clone <本仓库地址> ~/arch-dotfiles
+cd ~/arch-dotfiles
 chmod +x install.sh
 ./install.sh
 ```
 
-脚本做的事：
-
-1. 把旧配置备份到 `~/.config/fcitx5-backup/<时间戳>/`；
-2. `fcitx5/config`、`fcitx5/profile`、`fcitx5/conf/*.conf` 复制到 `~/.config/fcitx5/`；
-3. `rime/default.custom.yaml`、`rime/rime_ice.custom.yaml` 复制到 `~/.local/share/fcitx5/rime/`；
-4. `user.yaml.example` 仅供参考，不覆盖本机 `user.yaml`。
-5. `zellij/config.kdl` 复制到 `~/.config/zellij/config.kdl`（旧文件先备份）；
-6. `opencode/oh-my-opencode-slim.json` 复制到 `~/.config/opencode/`（旧文件先备份）；
-7. `opencode/opencode.json.example`、`oh-my-opencode/oh-my-opencode.json.example`
-   仅为脱敏示例，不直接覆盖（脚本会备份本机现有文件并提示手动填密钥）。
-
-装完后手动收尾（脚本最后也会提示）：
+## 全新 Arch 从零安装
 
 ```bash
-# 1. 重新部署 Rime（推荐在托盘菜单点「重新部署」，或清 build 后重载）
-rm -rf ~/.local/share/fcitx5/rime/build && fcitx5-remote -r || true
-
-# 2. 重启 fcitx5
-fcitx5-remote exit 2>/dev/null; fcitx5 -d 2>/dev/null || fcitx5 &
-```
-
-## 全新 Ubuntu 从零安装（合并自旧库 rime-config）
-
-已有快照恢复（`install.sh`）只覆盖 `custom` 文件；全新机器先跑 `bootstrap.sh`
-把地基打好。顺序必须是**先上游，后 custom**：
-
-```bash
-git clone https://github.com/LouisLau-art/fcitx5-rime-dotfiles.git ~/fcitx5-rime-dotfiles
-cd ~/fcitx5-rime-dotfiles
+git clone https://github.com/LouisLau-art/arch-dotfiles.git ~/arch-dotfiles
+cd ~/arch-dotfiles
 chmod +x bootstrap.sh install.sh
 ./bootstrap.sh   # 内部最后一步会自动调用 install.sh
 ```
 
 `bootstrap.sh` 做的事（幂等，可重复执行，全程非交互）：
 
-1. **系统包**：`nala`（无则回退 `apt`）`-y` 安装 15 个包——`fcitx5`、
-   `fcitx5-rime`、`fcitx5-chinese-addons(-data)`、gtk3/gtk4/qt5/qt6 四个前端、
-   `fcitx5-config-qt`、`fcitx5-module-cloudpinyin`、`fcitx5-module-lua(-common)`、
-   `librime-plugin-lua/charcode/octagram`。
-2. **环境变量**：`GTK_IM_MODULE` / `QT_IM_MODULE` / `XMODIFIERS` /
-   `INPUT_METHOD` / `SDL_IM_MODULE` 幂等追加到 `~/.bashrc` 与 `~/.profile`
-   （`GLFW_IM_MODULE=ibus` 某些应用才需要，按需手动加）。
-3. **GNOME Wayland 自启动**：把系统 `org.fcitx.Fcitx5.desktop` 拷到
-   `~/.config/autostart/`。
-4. **rime-ice 上游**：`~/.local/share/fcitx5/rime` 有 `.git` 则 `git pull`，
-   是残留目录则移走备份后 `git clone --depth 1 https://github.com/iDvel/rime-ice.git`；
-   然后再调 `install.sh` 覆盖本仓库快照（`default.custom.yaml` 等）。
-
-> 旧库 `rime-config`（私有）的从零安装文档已合并至此并归档，不再单独维护。
+1. **镜像站配置**：自动测试并选择最快的中国镜像站（清华、阿里云、BFSU、华为）
+2. **系统包安装**：
+   - 基础开发工具：base-devel, git, go, rust, cargo, npm, bun
+   - 终端工具：zsh, starship, zellij, bat, eza, zoxide, fd, sd, dust, duf, procs, bottom
+   - 输入法：fcitx5, fcitx5-rime, rime-ice-git, librime
+   - 字体：noto-fonts-cjk, otf-apple-pingfang, ttf-maplemono-nf-cn-unhinted
+   - 应用：feishu-bin, wechat-universal-bwrap, linuxqq
+3. **环境变量配置**：
+   - fcitx5 环境变量（GTK_IM_MODULE, QT_IM_MODULE, XMODIFIERS）
+   - 代理环境变量（Clash Verge Rev）
+   - Go/Python/npm 镜像配置
+4. **字体配置**：
+   - 系统级：`/etc/fonts/local.conf`
+   - 用户级：`~/.config/fontconfig/fonts.conf`
+   - 默认无衬线：PingFang SC
+   - 默认等宽：Maple Mono NF CN
+5. **输入法配置**：
+   - fcitx5 配置文件
+   - Rime 雾凇方案配置
+   - 自启动配置
+6. **终端配置**：
+   - zsh + 语法高亮 + 自动建议
+   - starship 提示符
+   - zellij 终端复用器
+7. **AI 编程助手配置**：
+   - opencode + oh-my-opencode-slim + magic-context
+   - lark-cli + 28 个飞书 skills
+   - firecrawl-cli + 12 个爬虫 skills
+   - serper 搜索 skills
 
 ## 核心效果
+
+### 中文输入法
 
 关键补丁来自 `rime/default.custom.yaml`：
 
@@ -103,93 +100,281 @@ patch:
 
 即：候选栏 9 个，左右 Shift 都是「提交原始编码并切英文」。
 
-以敲 `zidian` 为例：
-
 | 输入 | 按键 | 结果 |
 |------|------|------|
 | `zidian` | 空格 | 上屏首选中文候选（如「字典」），留在中文模式 |
 | `zidian` | 回车 | 上屏首选中文候选，留在中文模式 |
 | `zidian` | 左 Shift | 直接上屏英文原文 `zidian`，并切换到英文模式 |
-| 中文模式下 | 左 Shift | 在中 / 英文模式之间切换（松手即切，不上屏多余字符） |
+| 中文模式下 | 左 Shift | 在中 / 英文模式之间切换 |
 
 > 记忆口诀：**要中文就空格 / 回车，要英文就左 Shift。**
 
-`rime/rime_ice.custom.yaml` 另把雾凇 `switches/@1`（`ascii_punct` 中英标点开关）
-重置为 `1`，即默认英文标点，写代码友好，保证新部署后默认状态一致。
-
-## 快捷键速查（合并自旧库 rime-config）
+### 快捷键速查
 
 | 功能 | 快捷键 |
 |------|--------|
-| 切换输入法（中→英→中） | `Super+Space`（反向 `Shift+Super+Space`） |
-| 中英文快速切换 | `Shift`（左或右，提交编码） |
+| 切换输入法（中→英→中） | `Super+Space` |
+| 中英文快速切换 | `Shift`（左或右） |
 | 简繁切换 | `Control+Shift+F` |
 | 中英标点切换 | `Control+.` |
 | 剪贴板历史 | `Control+;` |
-| 云拼音开关 | `Control+Alt+Shift+C` |
 | 方案选单 | `F4` 或 `Control+~` |
 | 以词定字 | `[` 取首字 / `]` 取末字 |
 | 部件拆字反查 | `uU` + 拼音 |
 | 特殊符号 | `v` + 首字母 |
 | 计算器 | `cC` + 算式 |
-| 日期时间 | `rq`=日期 / `sj`=时间 / `xq`=星期，`nl`=农历 |
-| UUID / Unicode / 数字大写 | `uuid` / `U`+码点 / `R`+数字 |
-| 忘词（取消学习） | `Control+7` |
+| 日期时间 | `rq`=日期 / `sj`=时间 / `xq`=星期 |
 
-## 皮肤说明
+## 开发环境配置
 
-- 皮肤配置就在 `fcitx5/conf/classicui.conf` 里（`Theme=default-dark` / `DarkTheme=default-dark`），已随仓库收录。
-- 本机 `~/.config/fcitx5/themes/` 和 `~/.local/share/fcitx5/themes/` 均不存在，用的就是系统自带 `/usr/share/fcitx5/themes/default-dark/`，所以无需额外文件。
-- 换机器恢复后如需换肤，只改 `classicui.conf` 的 `Theme=` 并重启 fcitx5 即可；若以后用了自定义皮肤，再把 `~/.local/share/fcitx5/themes/<皮肤名>/` 整个目录收进仓库 `themes/` 即可。
+### Shell 配置（~/.zshrc）
 
-## 新增配置：zellij + opencode
+```zsh
+# 历史记录
+HISTSIZE=5000
+SAVEHIST=5000
+setopt HIST_IGNORE_ALL_DUPS
+setopt SHARE_HISTORY
 
-- `zellij/config.kdl`：zellij 终端复用器的自定义键位与界面配置（`clear-defaults` 全量自定义）。
-- `opencode/oh-my-opencode-slim.json`：slim 预设的 lane 模型分工与 zellij 复用器布局（main-vertical）。
-- `opencode/opencode.json.example`：opencode 主配置，含火山 Ark 与 opencode-zen 两组 provider（密钥已脱敏）。
-- `oh-my-opencode/oh-my-opencode.json.example`：各角色（sisyphus / oracle / explorer 等）的模型映射（密钥已脱敏）。
+# 插件
+source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+source /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
+source /usr/share/zsh/plugins/zsh-history-substring-search/zsh-history-substring-search.zsh
 
-`.example` 文件使用方法：复制为同名 `.json` 放到对应 `~/.config/` 目录，
-把 `YOUR-*-KEY-HERE` 替换为自己的真实密钥后再重启对应工具。
+# 补全
+fpath=(/usr/share/zsh/site-functions $fpath)
+autoload -Uz compinit && compinit
+
+# starship 提示符
+eval "$(starship init zsh)"
+
+# rust 命令替换
+alias cat='bat'
+alias ls='eza --icons --group-directories-first'
+alias ll='eza -la --icons --group-directories-first'
+alias find='fd'
+alias diff='delta'
+
+# zoxide (cd 智能跳转)
+eval "$(zoxide init zsh)"
+
+# opencode omos 函数
+omos() {
+  local port arg
+  for arg in "$@"; do
+    if [[ "$arg" == --port=* ]]; then
+      port="${arg#--port=}"
+      break
+    fi
+  done
+  if [[ -z "$port" ]]; then
+    local -a args=("$@")
+    local -i index
+    for ((index = 1; index <= ${#args}; index++)); do
+      if [[ "${args[index]}" == --port ]]; then
+        port="${args[index + 1]}"
+        break
+      fi
+    done
+  fi
+  if [[ -n "$port" ]]; then
+    OPENCODE_PORT="$port" command opencode "$@"
+    return
+  fi
+  port=$(python3 -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1]); s.close()') || return
+  OPENCODE_PORT="$port" command opencode --port "$port" "$@"
+}
+```
+
+### 字体配置（/etc/fonts/local.conf）
+
+```xml
+<?xml version="1.0"?>
+<!DOCTYPE fontconfig SYSTEM "urn:fontconfig:fonts.dtd">
+<fontconfig>
+  <match target="pattern">
+    <test name="family"><string>sans-serif</string></test>
+    <edit name="family" mode="prepend" binding="strong">
+      <string>PingFang SC</string>
+    </edit>
+  </match>
+  <match target="pattern">
+    <test name="family"><string>serif</string></test>
+    <edit name="family" mode="prepend" binding="strong">
+      <string>PingFang SC</string>
+    </edit>
+  </match>
+  <match target="pattern">
+    <test name="family"><string>monospace</string></test>
+    <edit name="family" mode="prepend" binding="strong">
+      <string>Maple Mono NF CN</string>
+    </edit>
+  </match>
+</fontconfig>
+```
+
+### opencode 配置（~/.config/opencode/opencode.jsonc）
+
+```jsonc
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "opencode/mimo-v2.5-free",
+  "plugin": [
+    "oh-my-opencode-slim",
+    "@cortexkit/opencode-magic-context@latest"
+  ],
+  "agent": {
+    "explore": { "disable": true },
+    "general": { "disable": true }
+  },
+  "lsp": true,
+  "compaction": { "auto": false, "prune": false }
+}
+```
+
+### oh-my-opencode-slim 配置（~/.config/opencode/oh-my-opencode-slim.json）
+
+```jsonc
+{
+  "$schema": "https://unpkg.com/oh-my-opencode-slim@latest/oh-my-opencode-slim.schema.json",
+  "preset": "mimo",
+  "multiplexer": { "type": "zellij" },
+  "presets": {
+    "mimo": {
+      "orchestrator": { "model": "opencode/mimo-v2.5-free", "skills": ["*"], "mcps": ["*", "!context7"] },
+      "oracle": { "model": "opencode/mimo-v2.5-free", "skills": ["simplify"], "mcps": [] },
+      "librarian": { "model": "opencode/mimo-v2.5-free", "skills": [], "mcps": ["context7", "gh_grep"] },
+      "explorer": { "model": "opencode/mimo-v2.5-free", "skills": [], "mcps": [] },
+      "designer": { "model": "opencode/mimo-v2.5-free", "skills": [], "mcps": [] },
+      "fixer": { "model": "opencode/mimo-v2.5-free", "skills": [], "mcps": [] }
+    }
+  }
+}
+```
+
+### magic-context 配置（~/.config/cortexkit/magic-context.jsonc）
+
+```jsonc
+{
+  "$schema": "https://docs.cortexkit.io/magic-context.schema.json",
+  "historian": { "opencode": { "model": "opencode/mimo-v2.5-free" } },
+  "dreamer": { "opencode": { "model": "opencode/mimo-v2.5-free" } },
+  "sidekick": { "model": "opencode/mimo-v2.5-free" }
+}
+```
+
+## 已安装工具列表
+
+### 系统工具
+- **zsh** - Shell
+- **starship** - 跨平台提示符
+- **zellij** - 终端复用器 v0.45.1
+- **base-devel** - 开发工具组
+- **git** - 版本控制
+- **go** - Go 语言 v1.27
+- **rust/cargo** - Rust 工具链
+- **npm/bun** - 包管理器
+
+### 终端增强
+- **bat** - cat 替代
+- **eza** - ls 替代
+- **zoxide** - cd 替代
+- **fd** - find 替代
+- **sd** - sed 替代
+- **dust** - du 替代
+- **duf** - df 替代
+- **procs** - ps 替代
+- **bottom** - top 替代
+- **git-delta** - diff 增强
+- **helix** - 编辑器
+
+### 输入法
+- **fcitx5** - 输入法框架 v5.1.22
+- **fcitx5-rime** - Rime 输入法 v5.1.15
+- **rime-ice-git** - 雾凇拼音方案
+
+### 字体
+- **noto-fonts-cjk** - Noto CJK 字体
+- **otf-apple-pingfang** - 苹方字体
+- **ttf-maplemono-nf-cn-unhinted** - Maple Mono NF CN
+
+### 应用
+- **feishu-bin** - 飞书 v7.72.23
+- **wechat-universal-bwrap** - 微信 v4.1.13
+- **linuxqq** - QQ v5:3.2.33
+
+### AI 编程助手
+- **opencode** - AI 编程助手
+- **oh-my-opencode-slim** - 多 agent 插件
+- **@cortexkit/opencode-magic-context** - 上下文管理插件
+- **lark-cli** - 飞书 CLI v1.0.94
+- **firecrawl-cli** - 网页爬虫 CLI v1.23.3
+
+### Skills
+- **28 个 lark skills** - 飞书相关操作
+- **12 个 firecrawl skills** - 网页爬取和搜索
+- **google-serper-search** - Google 搜索
+- **serper-search** - Serper 搜索
 
 ## 版本基线
 
-| 组件 | 版本 / 快照 |
-|------|-------------|
-| fcitx5 | 5.1.14 |
-| librime（来自 `installation.yaml` 的 `rime_version`） | 1.13.1 |
-| rime-ice 快照 | 2026-02-07 |
+| 组件 | 版本 |
+|------|------|
+| Arch Linux | rolling |
+| KDE Plasma | 6.x |
+| fcitx5 | 5.1.22 |
+| librime | 1:1.17.0 |
+| rime-ice | r993.fbb516b |
+| zellij | 0.45.1 |
+| opencode | 1.18.29 |
+| lark-cli | 1.0.94 |
+| firecrawl-cli | 1.23.3 |
 
-不同版本默认值可能变化，若升级后行为异常，优先对比 `default.yaml` /
-`rime_ice.schema.yaml` 上游变更后再重新部署。
-
-## 验证与故障排查（合并自旧库 rime-config）
+## 验证与故障排查
 
 ```bash
-pgrep -a fcitx5                                            # fcitx5 是否在跑
-fcitx5-diagnose 2>&1 | grep -A2 rime                       # rime 插件是否加载
-cat ~/.local/share/fcitx5/rime/default.custom.yaml        # 应见 page_size 9 且只有 rime_ice
-echo "$GTK_IM_MODULE $QT_IM_MODULE $XMODIFIERS"            # 应为 fcitx fcitx @im=fcitx
-ls ~/.local/share/fcitx5/rime/build/                       # 有内容=Rime 已部署
+# 检查 fcitx5
+pgrep -a fcitx5
+fcitx5-diagnose 2>&1 | grep -A2 rime
+
+# 检查字体
+fc-match monospace    # 应为 Maple Mono NF CN
+fc-match sans-serif   # 应为 PingFang SC
+
+# 检查 opencode
+oc --version
+oc models
+
+# 检查 lark-cli
+lark-cli --version
+lark-cli auth status
+
+# 检查 firecrawl
+firecrawl --version
+firecrawl --status
 ```
 
 | 症状 | 排查方法 |
 |------|----------|
 | 候选框不显示 | 查 `GTK_IM_MODULE`；Wayland 确认装了 `fcitx5-frontend-gtk4` |
-| 只有英文无中文 | `fcitx5-diagnose` 确认 rime 已加载；`profile` 要有 `Name=rime` |
-| 云拼音不工作 | 查网络；`cloudpinyin.conf` 中 `Backend=GoogleCN` |
-| 部署后无候选词 | 删 `~/.local/share/fcitx5/rime/build/` 后 `fcitx5 -r -d` 重部署 |
-| 用户词库丢失 | 词库在 `rime_ice.userdb/`，备份该目录即可 |
+| 字体显示异常 | `fc-cache -f` 刷新字体缓存 |
+| opencode 无法连接 | 检查代理设置，或使用 `oc` 命令（自动带代理） |
+| lark-cli 未登录 | `lark-cli auth login` |
 
 ## 脱敏说明
 
-- `rime/user.yaml.example` 为手写结构示例，`last_build_time` /
-  `schema_access_time` 均填 `0` 占位，不含任何机器 ID。
-- `installation.yaml` 中的 `installation_id` 未收录，恢复时由 Rime 自动生成。
-- `fcitx5/conf/` 下为常规插件配置，不含口令；`~/.config/fcitx5/conf/cached_layouts`
-  为巨型缓存文件，未收录。
-- `opencode/opencode.json` 含 2 个真实 `apiKey`（火山 Ark + opencode-zen），
-  `oh-my-opencode/oh-my-opencode.json` 含 1 个真实 `api_key`，
-  故两者均以 `.example` 脱敏收录（密钥替换为 `YOUR-*-KEY-HERE` 占位），不推明文。
-- `zellij/config.kdl` 与 `opencode/oh-my-opencode-slim.json` 经 `rg` 扫描无密钥，原样收录。
-- `*.bak`、node_modules、`*lock.json` 一律未收录。
+- `opencode/opencode.json.example` 含脱敏 API Key 占位符
+- `oh-my-opencode/oh-my-opencode.json.example` 含脱敏 API Key 占位符
+- `environment.d/serper.conf` 需替换为真实 API Key
+- 所有 `.example` 文件使用方法：复制为同名文件，替换 `YOUR-*-KEY-HERE` 占位符
+
+## 相关链接
+
+- [Arch Linux Wiki](https://wiki.archlinux.org/)
+- [fcitx5 Wiki](https://wiki.archlinux.org/title/Fcitx5)
+- [Rime 雾凇拼音](https://github.com/iDvel/rime-ice)
+- [opencode](https://opencode.ai/)
+- [oh-my-opencode-slim](https://github.com/alvinunreal/oh-my-opencode-slim)
+- [magic-context](https://github.com/cortexkit/magic-context)
+- [lark-cli](https://github.com/larksuite/cli)
+- [firecrawl-cli](https://github.com/firecrawl/cli)
