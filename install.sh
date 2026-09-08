@@ -54,6 +54,9 @@ mkdir -p "${FCITX5_CONFIG_DIR}/conf"
 cp -a "${SCRIPT_DIR}"/fcitx5/conf/*.conf "${FCITX5_CONFIG_DIR}/conf/"
 
 echo "==> 安装 Rime 用户配置"
+if [ ! -f "${RIME_USER_DIR}/default.yaml" ]; then
+  echo "提示: 未检测到 rime-ice 上游（缺 default.yaml），全新机器请先运行 ./bootstrap.sh 拉上游再覆盖 custom；此处仍会写入 custom 文件。"
+fi
 cp -a "${SCRIPT_DIR}/rime/default.custom.yaml" "${RIME_USER_DIR}/default.custom.yaml"
 cp -a "${SCRIPT_DIR}/rime/rime_ice.custom.yaml" "${RIME_USER_DIR}/rime_ice.custom.yaml"
 # 注意：rime/user.yaml.example 仅为结构示例，不覆盖本机 user.yaml

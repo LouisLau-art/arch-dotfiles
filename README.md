@@ -9,7 +9,9 @@ opencode / oh-my-opencode 的 AI 编程助手配置。
 ```text
 .
 ├── README.md
-├── install.sh              # 一键安装脚本（带备份，可重复执行）
+├── bootstrap.sh            # 全新 Ubuntu 从零安装（系统包+环境变量+自启动+rime-ice上游，再调 install.sh）
+├── install.sh              # 快照恢复脚本（带备份，可重复执行）
+├── .gitignore              # 忽略 Rime 部署产物（build/、*.userdb/、sync/）
 ├── fcitx5/
 │   ├── config              # fcitx5 全局热键 / 行为
 │   ├── profile             # 输入法分组（Default: rime + keyboard-us）
@@ -57,6 +59,35 @@ rm -rf ~/.local/share/fcitx5/rime/build && fcitx5-remote -r || true
 fcitx5-remote exit 2>/dev/null; fcitx5 -d 2>/dev/null || fcitx5 &
 ```
 
+## 全新 Ubuntu 从零安装（合并自旧库 rime-config）
+
+已有快照恢复（`install.sh`）只覆盖 `custom` 文件；全新机器先跑 `bootstrap.sh`
+把地基打好。顺序必须是**先上游，后 custom**：
+
+```bash
+git clone https://github.com/LouisLau-art/fcitx5-rime-dotfiles.git ~/fcitx5-rime-dotfiles
+cd ~/fcitx5-rime-dotfiles
+chmod +x bootstrap.sh install.sh
+./bootstrap.sh   # 内部最后一步会自动调用 install.sh
+```
+
+`bootstrap.sh` 做的事（幂等，可重复执行，全程非交互）：
+
+1. **系统包**：`nala`（无则回退 `apt`）`-y` 安装 15 个包——`fcitx5`、
+   `fcitx5-rime`、`fcitx5-chinese-addons(-data)`、gtk3/gtk4/qt5/qt6 四个前端、
+   `fcitx5-config-qt`、`fcitx5-module-cloudpinyin`、`fcitx5-module-lua(-common)`、
+   `librime-plugin-lua/charcode/octagram`。
+2. **环境变量**：`GTK_IM_MODULE` / `QT_IM_MODULE` / `XMODIFIERS` /
+   `INPUT_METHOD` / `SDL_IM_MODULE` 幂等追加到 `~/.bashrc` 与 `~/.profile`
+   （`GLFW_IM_MODULE=ibus` 某些应用才需要，按需手动加）。
+3. **GNOME Wayland 自启动**：把系统 `org.fcitx.Fcitx5.desktop` 拷到
+   `~/.config/autostart/`。
+4. **rime-ice 上游**：`~/.local/share/fcitx5/rime` 有 `.git` 则 `git pull`，
+   是残留目录则移走备份后 `git clone --depth 1 https://github.com/iDvel/rime-ice.git`；
+   然后再调 `install.sh` 覆盖本仓库快照（`default.custom.yaml` 等）。
+
+> 旧库 `rime-config`（私有）的从零安装文档已合并至此并归档，不再单独维护。
+
 ## 核心效果
 
 关键补丁来自 `rime/default.custom.yaml`：
@@ -83,8 +114,27 @@ patch:
 
 > 记忆口诀：**要中文就空格 / 回车，要英文就左 Shift。**
 
-`rime/rime_ice.custom.yaml` 另把雾凇第一个开关（`switches/@1`）重置为 `1`，
-保证新部署后默认状态一致。
+`rime/rime_ice.custom.yaml` 另把雾凇 `switches/@1`（`ascii_punct` 中英标点开关）
+重置为 `1`，即默认英文标点，写代码友好，保证新部署后默认状态一致。
+
+## 快捷键速查（合并自旧库 rime-config）
+
+| 功能 | 快捷键 |
+|------|--------|
+| 切换输入法（中→英→中） | `Super+Space`（反向 `Shift+Super+Space`） |
+| 中英文快速切换 | `Shift`（左或右，提交编码） |
+| 简繁切换 | `Control+Shift+F` |
+| 中英标点切换 | `Control+.` |
+| 剪贴板历史 | `Control+;` |
+| 云拼音开关 | `Control+Alt+Shift+C` |
+| 方案选单 | `F4` 或 `Control+~` |
+| 以词定字 | `[` 取首字 / `]` 取末字 |
+| 部件拆字反查 | `uU` + 拼音 |
+| 特殊符号 | `v` + 首字母 |
+| 计算器 | `cC` + 算式 |
+| 日期时间 | `rq`=日期 / `sj`=时间 / `xq`=星期，`nl`=农历 |
+| UUID / Unicode / 数字大写 | `uuid` / `U`+码点 / `R`+数字 |
+| 忘词（取消学习） | `Control+7` |
 
 ## 皮肤说明
 
@@ -112,6 +162,24 @@ patch:
 
 不同版本默认值可能变化，若升级后行为异常，优先对比 `default.yaml` /
 `rime_ice.schema.yaml` 上游变更后再重新部署。
+
+## 验证与故障排查（合并自旧库 rime-config）
+
+```bash
+pgrep -a fcitx5                                            # fcitx5 是否在跑
+fcitx5-diagnose 2>&1 | grep -A2 rime                       # rime 插件是否加载
+cat ~/.local/share/fcitx5/rime/default.custom.yaml        # 应见 page_size 9 且只有 rime_ice
+echo "$GTK_IM_MODULE $QT_IM_MODULE $XMODIFIERS"            # 应为 fcitx fcitx @im=fcitx
+ls ~/.local/share/fcitx5/rime/build/                       # 有内容=Rime 已部署
+```
+
+| 症状 | 排查方法 |
+|------|----------|
+| 候选框不显示 | 查 `GTK_IM_MODULE`；Wayland 确认装了 `fcitx5-frontend-gtk4` |
+| 只有英文无中文 | `fcitx5-diagnose` 确认 rime 已加载；`profile` 要有 `Name=rime` |
+| 云拼音不工作 | 查网络；`cloudpinyin.conf` 中 `Backend=GoogleCN` |
+| 部署后无候选词 | 删 `~/.local/share/fcitx5/rime/build/` 后 `fcitx5 -r -d` 重部署 |
+| 用户词库丢失 | 词库在 `rime_ice.userdb/`，备份该目录即可 |
 
 ## 脱敏说明
 

@@ -1,0 +1,6 @@
+# Rime 部署产物与用户数据（合并自旧库 rime-config）
+build/
+*.userdb/
+sync/
+# 编辑器/脚本备份
+*.bak
