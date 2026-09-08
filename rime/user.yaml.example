@@ -1,0 +1,10 @@
+# user.yaml 结构示例（已脱敏）
+# 原文件中的 installation_id（位于 installation.yaml）等机器唯一 ID 已去掉，
+# 此文件仅保留结构供参考。恢复时不需要复制本文件，Rime 会自动生成。
+var:
+  last_build_time: 0  # 示例：首次部署后由 Rime 自动写入的时间戳
+  option:
+    ascii_punct: true
+  previously_selected_schema: rime_ice
+  schema_access_time:
+    rime_ice: 0  # 示例：各 schema 的最近使用时间戳
