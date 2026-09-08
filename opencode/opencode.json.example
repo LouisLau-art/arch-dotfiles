@@ -1,0 +1,128 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "agent": {
+    "explore": {
+      "disable": true
+    },
+    "general": {
+      "disable": true
+    }
+  },
+  "compaction": {
+    "auto": false,
+    "prune": false
+  },
+  "enabled_providers": [
+    "volcengine",
+    "opencode"
+  ],
+  "instructions": [
+    "/home/louis/.config/opencode/AGENTS.md"
+  ],
+  "lsp": true,
+  "plugin": [
+    "@cortexkit/opencode-magic-context@latest",
+    "oh-my-opencode-slim@latest"
+  ],
+  "provider": {
+    "volcengine": {
+      "models": {
+        "deepseek-v4-flash-ga-260731": {
+          "limit": {
+            "context": 1048576,
+            "output": 393216
+          },
+          "name": "DeepSeek V4 Flash (Ark)"
+        },
+        "deepseek-v4-pro-ga-260813": {
+          "limit": {
+            "context": 1048576,
+            "output": 393216
+          },
+          "name": "DeepSeek V4 Pro (Ark)"
+        },
+        "doubao-seed-2-0-code-preview-260215": {
+          "limit": {
+            "context": 262144,
+            "output": 131072
+          },
+          "name": "Doubao 2.0 Code Preview"
+        },
+        "doubao-seed-2-0-lite-260428": {
+          "limit": {
+            "context": 262144,
+            "output": 131072
+          },
+          "name": "Doubao 2.0 Lite"
+        },
+        "doubao-seed-2-0-mini-260428": {
+          "limit": {
+            "context": 262144,
+            "output": 131072
+          },
+          "name": "Doubao 2.0 Mini"
+        },
+        "doubao-seed-2-0-pro-260215": {
+          "limit": {
+            "context": 262144,
+            "output": 131072
+          },
+          "name": "Doubao 2.0 Pro"
+        },
+        "doubao-seed-2-1-pro-260628": {
+          "limit": {
+            "context": 262144,
+            "output": 262144
+          },
+          "name": "Doubao 2.1 Pro"
+        },
+        "doubao-seed-2-1-turbo-260628": {
+          "limit": {
+            "context": 262144,
+            "output": 262144
+          },
+          "name": "Doubao 2.1 Turbo"
+        },
+        "glm-5-2-260617": {
+          "limit": {
+            "context": 1048576,
+            "output": 131072
+          },
+          "name": "GLM-5.2"
+        }
+      },
+      "name": "Volcengine Ark",
+      "npm": "@ai-sdk/openai-compatible",
+      "options": {
+        "apiKey": "YOUR-VOLCENGINE-ARK-KEY-HERE",
+        "baseURL": "https://ark.cn-beijing.volces.com/api/v3"
+      },
+      "whitelist": [
+        "deepseek-v4-flash-ga-260731",
+        "deepseek-v4-pro-ga-260813",
+        "doubao-seed-2-0-code-preview-260215",
+        "doubao-seed-2-0-lite-260428",
+        "doubao-seed-2-0-mini-260428",
+        "doubao-seed-2-0-pro-260215",
+        "doubao-seed-2-1-pro-260628",
+        "doubao-seed-2-1-turbo-260628",
+        "glm-5-2-260617"
+      ]
+    },
+    "opencode": {
+      "options": {
+        "apiKey": "YOUR-OPENCODE-ZEN-KEY-HERE"
+      },
+      "whitelist": [
+        "big-pickle",
+        "mimo-v2.5-free",
+        "hy3-free",
+        "ling-3.0-flash-fin-free",
+        "nemotron-3-ultra-free",
+        "nemotron-3.5-lightning-free",
+        "muse-spark-1.2-contributor-free",
+        "muse-spark-1.3-contributor-free"
+      ]
+    }
+  }
+}

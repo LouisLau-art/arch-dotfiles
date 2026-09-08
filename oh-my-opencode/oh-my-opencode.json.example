@@ -1,0 +1,58 @@
+{
+  "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-openagent/dev/assets/oh-my-opencode.schema.json",
+
+  "agents": {
+    "sisyphus": {
+      "model": "yujian/doubao-seed-2-0-pro-260215",
+      "ultrawork": {
+        "model": "yujian/doubao-seed-2-0-pro-260215",
+        "variant": "max"
+      }
+    },
+    "librarian": {
+      "model": "yujian/doubao-seed-2-0-lite-260215"
+    },
+    "explore": {
+      "model": "yujian/doubao-seed-2-0-mini-260215"
+    },
+    "oracle": {
+      "model": "yujian/doubao-seed-2-0-pro-260215",
+      "variant": "high"
+    },
+    "prometheus": {
+      "model": "yujian/doubao-seed-2-0-pro-260215"
+    },
+    "hephaestus": {
+      "model": "yujian/doubao-seed-2-0-code-preview-260215"
+    }
+  },
+
+  "categories": {
+    "visual-engineering": {
+      "model": "yujian/doubao-seed-2-0-lite-260215",
+      "variant": "high"
+    },
+    "unspecified-high": {
+      "model": "yujian/doubao-seed-2-0-pro-260215",
+      "variant": "max"
+    },
+    "quick": {
+      "model": "yujian/doubao-seed-2-0-mini-260215"
+    },
+    "ultrabrain": {
+      "model": "yujian/doubao-seed-2-0-pro-260215",
+      "variant": "xhigh"
+    },
+    "code-generation": {
+      "model": "yujian/doubao-seed-2-0-code-preview-260215"
+    }
+  },
+
+  "providers": {
+    "yujian": {
+      "type": "openai-compat",
+      "base_url": "https://ark.cn-beijing.volces.com/api/v3",
+      "api_key": "YOUR-VOLCENGINE-ARK-KEY-HERE"
+    }
+  }
+}
