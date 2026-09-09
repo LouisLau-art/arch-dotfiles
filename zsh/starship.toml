@@ -1,0 +1,73 @@
+# starship.toml - 现代简洁主题 (极简快速)
+add_newline = true
+command_timeout = 500
+scan_timeout = 30
+continuation_prompt = "[∙](bright-black) "
+
+# 左 prompt 保持极简;耗时移到右 prompt 降低重绘开销
+format = """$username$hostname$directory$git_branch$git_status$package$python$rust$golang$nodejs$line_break$character"""
+right_format = """$cmd_duration"""
+# 说明: starship 1.26 无内置 transient 键,不加未知键;靠 add_newline + right_format 已达最小重绘效果
+
+[character]
+success_symbol = "[❯](bold green)"
+error_symbol = "[❯](bold red)"
+
+[username]
+show_always = true
+style_user = "bold yellow"
+style_root = "bold red"
+format = "[$user]($style) "
+
+[hostname]
+ssh_only = false
+format = "[@$hostname](bold blue) "
+disabled = false
+
+[directory]
+style = "bold cyan"
+truncation_length = 4
+truncate_to_repo = true
+read_only = " 󰌾"
+format = "[$path]($style)[$read_only]($red) "
+truncation_symbol = "…/"
+
+[git_branch]
+symbol = " "
+format = "[[$symbol$branch]($style)]($style)"
+style = "bold purple"
+
+[git_status]
+style = "bold red"
+
+[package]
+symbol = "󰏗 "
+
+[python]
+symbol = " "
+format = "[$symbol$version]($style) "
+style = "bold yellow"
+
+[rust]
+symbol = " "
+format = "[$symbol$version]($style) "
+style = "bold red"
+
+[golang]
+symbol = " "
+format = "[$symbol$version]($style) "
+style = "bold cyan"
+
+[nodejs]
+symbol = " "
+format = "[$symbol$version]($style) "
+style = "bold green"
+
+[cmd_duration]
+min_time = 500
+format = "[$duration]($style) "
+style = "yellow"
+
+# 状态码由 character 的 error_symbol 体现,关掉 status 模块省一次 fork
+[status]
+disabled = true

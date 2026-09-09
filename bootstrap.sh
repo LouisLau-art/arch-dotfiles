@@ -23,6 +23,24 @@ echo "==> [1/5] 安装系统包（fcitx5 + rime + 前后端 + lua/八股文插�
   fcitx5-module-lua fcitx5-module-lua-common \
   librime-plugin-lua librime-plugin-charcode librime-plugin-octagram
 
+echo "==> [1b/5] 终端增强 + Plasma 美化包（Arch pacman；幂等，已装则跳过）"
+if command -v pacman >/dev/null 2>&1; then
+  sudo pacman -S --noconfirm --needed \
+    fzf atuin yazi direnv \
+    papirus-icon-theme kvantum qt6ct \
+    plasma-workspace-wallpapers
+  # carapace-bin 仅 AUR 提供（paru 安装，非交互幂等）
+  if pacman -Qq carapace-bin >/dev/null 2>&1; then
+    echo "已存在，跳过: carapace-bin"
+  elif command -v paru >/dev/null 2>&1; then
+    paru -S --noconfirm --needed carapace-bin
+  else
+    echo "提示: 未检测到 paru，跳过 carapace-bin（AUR）；请手动 paru -S carapace-bin"
+  fi
+else
+  echo "非 Arch 系统：请手动安装 fzf / atuin / yazi / direnv / papirus-icon-theme / kvantum / qt6ct / plasma-workspace-wallpapers；carapace-bin 需走 AUR（paru -S carapace-bin）"
+fi
+
 echo "==> [2/5] 环境变量（幂等追加到 ~/.bashrc 与 ~/.profile）"
 ENV_LINES='export GTK_IM_MODULE=fcitx
 export QT_IM_MODULE=fcitx

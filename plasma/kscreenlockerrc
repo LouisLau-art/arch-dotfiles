@@ -1,0 +1,6 @@
+[Greeter]
+WallpaperPlugin=org.kde.slideshow
+
+[Greeter][Wallpaper][org.kde.slideshow][General]
+SlideInterval=900
+SlidePaths=/usr/share/wallpapers

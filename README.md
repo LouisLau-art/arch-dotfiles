@@ -21,6 +21,18 @@
 │   └── user.yaml.example        # user.yaml 脱敏结构示例
 ├── zellij/
 │   └── config.kdl               # zellij 终端复用器配置
+├── zsh/
+│   ├── .zshrc                   # zsh 主配置（compinit -C / fzf / atuin / direnv / yazi / carapace）
+│   ├── private.zsh.example      # 机密模板（SERPER Key 脱敏，用 YOUR_SERPER_API_KEY_HERE 占位）
+│   └── starship.toml            # starship 提示符（nerd 符号 / directory 截断 / 右 prompt 耗时）
+├── konsole/
+│   ├── Profile 1.profile        # Konsole 配置（Maple Mono NF CN 12pt）
+│   └── konsolerc                # Konsole 默认 profile 指向
+├── plasma/
+│   ├── kdeglobals.beauty.conf   # 仅美化键：Papirus-Dark 图标 + 动画 0.75（kwriteconfig6 恢复）
+│   ├── kwinrc.beauty.conf       # 仅美化键：OpenGL 合成 + NightColor 5000/6500K + blur/contrast
+│   ├── kscreenlockerrc          # 锁屏幻灯片壁纸（/usr/share/wallpapers，900 秒，可直接覆盖）
+│   └── desktop-appletsrc.NOTES.md # appletsrc 不收整文件的原因 + 桌面幻灯片/tray 恢复命令
 ├── opencode/
 │   ├── opencode.json.example    # opencode 主配置（已脱敏）
 │   └── oh-my-opencode-slim.json # oh-my-opencode-slim 预设
@@ -57,6 +69,8 @@ chmod +x bootstrap.sh install.sh
 2. **系统包安装**：
    - 基础开发工具：base-devel, git, go, rust, cargo, npm, bun
    - 终端工具：zsh, starship, zellij, bat, eza, zoxide, fd, sd, dust, duf, procs, bottom
+   - 终端增强：fzf, atuin, yazi, direnv, carapace-bin（仅 AUR，用 paru 安装）
+   - Plasma 美化：papirus-icon-theme, kvantum, qt6ct, plasma-workspace-wallpapers
    - 输入法：fcitx5, fcitx5-rime, rime-ice-git, librime
    - 字体：noto-fonts-cjk, otf-apple-pingfang, ttf-maplemono-nf-cn-unhinted
    - 应用：feishu-bin, wechat-universal-bwrap, linuxqq
@@ -186,6 +200,17 @@ omos() {
 }
 ```
 
+### Plasma 美化恢复（plasma/ + konsole/）
+
+`install.sh` 用「锁屏全文件覆盖 + `kwriteconfig6` 逐键写入」恢复，不全盘复制含机器 id 的文件：
+
+- 图标 `Papirus-Dark`、动画 `AnimationDurationFactor=0.75`（`kdeglobals.beauty.conf`）
+- 合成 `OpenGL` + `blur`/`contrast`、NightColor 自动（白天 6500K / 夜晚 5000K）（`kwinrc.beauty.conf`）
+- 桌面幻灯片（`/usr/share/wallpapers`，本机实测 `SlideInterval=5`）与 tray 精简（仅 网络/音量/电池）：`appletsrc` 含 containment id，只收恢复命令，见 `plasma/desktop-appletsrc.NOTES.md`
+- 锁屏幻灯片（同壁纸目录，900 秒）：`plasma/kscreenlockerrc` 整文件覆盖
+- Konsole：`Maple Mono NF CN 12pt`（`konsole/Profile 1.profile` + `konsolerc`）
+- 生效方式：Wayland 下重新登录；或 `kquitapp6 plasmashell && kstart plasmashell`
+
 ### 字体配置（/etc/fonts/local.conf）
 
 ```xml
@@ -287,6 +312,16 @@ omos() {
 - **bottom** - top 替代
 - **git-delta** - diff 增强
 - **helix** - 编辑器
+- **fzf** - 模糊查找（Ctrl-R/T 键绑定 + fd 后端）
+- **atuin** - 历史同步（`--disable-up-arrow`，保留 history-substring-search）
+- **yazi** - 终端文件管理器（`y()` 退出自动 cd）
+- **direnv** - 目录环境
+- **carapace-bin** - 多 shell 补全桥接（仅 AUR，`paru -S carapace-bin`）
+
+### Plasma 美化
+- **papirus-icon-theme** - Papirus-Dark 图标主题
+- **kvantum / qt6ct** - Qt 主题引擎与配置工具
+- **plasma-workspace-wallpapers** - 桌面/锁屏幻灯片壁纸来源（`/usr/share/wallpapers`）
 
 ### 输入法
 - **fcitx5** - 输入法框架 v5.1.22
@@ -365,6 +400,7 @@ firecrawl --status
 
 - `opencode/opencode.json.example` 含脱敏 API Key 占位符
 - `oh-my-opencode/oh-my-opencode.json.example` 含脱敏 API Key 占位符
+- `zsh/private.zsh.example` 含脱敏 Serper Key 占位符（旧 key 已泄漏，恢复后务必去 serper.dev 轮换）
 - `environment.d/serper.conf` 需替换为真实 API Key
 - 所有 `.example` 文件使用方法：复制为同名文件，替换 `YOUR-*-KEY-HERE` 占位符
 
