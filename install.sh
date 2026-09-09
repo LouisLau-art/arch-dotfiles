@@ -59,6 +59,9 @@ if [ ! -f "${RIME_USER_DIR}/default.yaml" ]; then
 fi
 cp -a "${SCRIPT_DIR}/rime/default.custom.yaml" "${RIME_USER_DIR}/default.custom.yaml"
 cp -a "${SCRIPT_DIR}/rime/rime_ice.custom.yaml" "${RIME_USER_DIR}/rime_ice.custom.yaml"
+# rime_ice_plus 词库合集（配合 rime_ice.custom.yaml 的 "translator/dictionary": rime_ice_plus；
+# 引用的扩展词库文件由 bootstrap.sh [4/5] 下载到本目录）
+cp -a "${SCRIPT_DIR}/rime/rime_ice_plus.dict.yaml" "${RIME_USER_DIR}/rime_ice_plus.dict.yaml"
 # 注意：rime/user.yaml.example 仅为结构示例，不覆盖本机 user.yaml
 
 echo "==> 安装 zellij 配置"
