@@ -72,10 +72,41 @@ mkdir -p "${RIME_DIR}"
 # 代理可选：本机 Clash 在 127.0.0.1:7897；设置了 https_proxy 就走代理，否则直连
 CURL_PROXY=()
 if [ -n "${https_proxy:-}" ]; then CURL_PROXY=(--proxy "${https_proxy}"); fi
+# GitHub 镜像：GitHub 系 URL 先走镜像（国内直连，故意不带代理），失败回退原始 URL。
+# 实测 gh-proxy 3~14MB/s vs 直连几十 KB/s（见 PITFALLS 第 19 条）。
+GH_MIRRORS=(https://gh-proxy.com/ https://ghfast.top/)
+fetch() { # fetch <url> <dest>：镜像优先 + 直连回退
+  local url="$1" dest="$2" m
+  if [[ $url =~ ^https://(github\.com|raw\.githubusercontent\.com)/ ]]; then
+    for m in "${GH_MIRRORS[@]}"; do
+      echo "镜像下载: ${m}${url}"
+      if curl -L --fail --retry 2 -o "${dest}" "${m}${url}"; then return 0; fi
+      echo "镜像 ${m} 失败，尝试下一个"
+    done
+    echo "镜像均不可用，回退直连"
+  fi
+  curl -L --fail "${CURL_PROXY[@]}" -o "${dest}" "${url}"
+}
+clone_with_mirror() { # clone_with_mirror <上游 URL> <目标目录>：镜像克隆后把 origin 还原为上游，后续 pull 行为不变
+  local upstream="$1" dest="$2" m tmp
+  for m in "${GH_MIRRORS[@]}"; do
+    tmp="$(mktemp -d)"
+    echo "镜像克隆: ${m}${upstream}"
+    if git clone --depth 1 "${m}${upstream}" "${tmp}/repo"; then
+      mv "${tmp}/repo" "${dest}"
+      git -C "${dest}" remote set-url origin "${upstream}"
+      rm -rf "${tmp}"
+      return 0
+    fi
+    rm -rf "${tmp}"
+    echo "镜像 ${m} 失败，尝试下一个"
+  done
+  echo "镜像均不可用，回退直连克隆"
+  git clone --depth 1 "${upstream}" "${dest}"
+}
 dl() { # dl <url> <dest>：已存在（非空）则跳过
   if [ -s "$2" ]; then echo "已存在，跳过: $2"; return 0; fi
-  echo "下载: $1"
-  curl -L --fail "${CURL_PROXY[@]}" -o "$2" "$1"
+  fetch "$1" "$2"
 }
 # 1) 万象 LTS 语言模型（octagram grammar，约 400MB；配合 rime_ice.custom.yaml 的 grammar 段）
 dl "https://github.com/amzxyz/RIME-LMDG/releases/download/LTS/wanxiang-lts-zh-hans.gram" \
@@ -98,7 +129,7 @@ wrap_thuocl() { # wrap_thuocl <词库名> <url>
   local name="$1" url="$2" out="${RIME_DIR}/${1}.dict.yaml" tmp
   if [ -s "${out}" ]; then echo "已存在，跳过: ${out}"; return 0; fi
   tmp="$(mktemp)"
-  curl -L --fail "${CURL_PROXY[@]}" -o "${tmp}" "${url}"
+  fetch "${url}" "${tmp}"
   { printf '# THUOCL (https://github.com/thunlp/THUOCL) wrapped for rime\n---\nname: %s\nversion: "2016"\nsort: by_weight\ncolumns:\n  - text\n  - weight\n...\n' "${name}"
     sed -E 's/ ?\t ?/\t/' "${tmp}"
   } > "${out}"
@@ -118,7 +149,7 @@ else
     mv "${RIME_DIR}" "${HOME}/.local/share/fcitx5/rime-backup-${TS}"
     echo "已有非 git 的 rime 目录，已移走备份到 rime-backup-${TS}"
   fi
-  git clone --depth 1 "${RIME_UPSTREAM}" "${RIME_DIR}"
+  clone_with_mirror "${RIME_UPSTREAM}" "${RIME_DIR}"
 fi
 
 echo "==> 覆盖本仓库快照（调用 install.sh，自带备份）"

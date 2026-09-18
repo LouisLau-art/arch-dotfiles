@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+# makepkg DLAGENT 包装器：GitHub 系源自动走国内镜像，失败或龟速自动回退直连。
+set -uo pipefail
+
+REAL_CURL="${REAL_CURL:-/usr/bin/curl}"
+GITHUB_RE='^https?://(github\.com|raw\.githubusercontent\.com|codeload\.github\.com|gist\.githubusercontent\.com)/'
+MIRRORS="${GH_MIRRORS:-https://gh-proxy.com/,https://ghfast.top/}"
+SPEED_LIMIT="${GH_MIRROR_SPEED_LIMIT:-102400}"
+SPEED_TIME="${GH_MIRROR_SPEED_TIME:-20}"
+
+args=("$@")
+
+declare -a url_idx=()
+for ((i = 0; i < ${#args[@]}; i++)); do
+    if [[ ${args[i]} =~ ^https?:// ]]; then
+        url_idx+=("$i")
+    fi
+done
+
+if ((${#url_idx[@]} == 0)); then
+    exec "$REAL_CURL" "${args[@]}"
+fi
+
+i="${url_idx[0]}"
+url="${args[i]}"
+
+declare -a cand_url=() cand_name=()
+if [[ $url =~ $GITHUB_RE ]]; then
+    IFS=',' read -ra m_list <<<"$MIRRORS"
+    for m in "${m_list[@]}"; do
+        m="${m%/}"
+        if [[ -n $m ]]; then
+            cand_url+=("$m/$url")
+            cand_name+=("$m")
+        fi
+    done
+fi
+cand_url+=("$url")
+cand_name+=("直连")
+
+total=${#cand_url[@]}
+for ((c = 0; c < total; c++)); do
+    newargs=("${args[@]}")
+    newargs[i]="${cand_url[c]}"
+    extra=()
+    if ((c < total - 1)); then
+        extra=(--speed-limit "$SPEED_LIMIT" --speed-time "$SPEED_TIME")
+        printf ':: 镜像加速 %s\n' "${cand_name[c]}" >&2
+    else
+        ((c > 0)) && printf ':: 回退直连 %s\n' "${url%%\?*}" >&2
+    fi
+    if ((c == total - 1)); then
+        exec "$REAL_CURL" "${extra[@]}" "${newargs[@]}"
+    fi
+    if "$REAL_CURL" "${extra[@]}" "${newargs[@]}"; then
+        exit 0
+    fi
+    printf ':: %s 不可用或速度过低，换下一来源\n' "${cand_name[c]}" >&2
+done
+
+exit 1

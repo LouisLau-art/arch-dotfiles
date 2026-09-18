@@ -115,38 +115,13 @@ omos() {
     fi
   done
 
-  local -a proxy_env
   if (( use_proxy )); then
     local -x HTTPS_PROXY=http://127.0.0.1:7897 HTTP_PROXY=http://127.0.0.1:7897 NO_PROXY=localhost,127.0.0.1,::1
   fi
 
-  local port
-
-  for arg in "$@"; do
-    if [[ "$arg" == --port=* ]]; then
-      port="${arg#--port=}"
-      break
-    fi
-  done
-
-  if [[ -z "$port" ]]; then
-    local -a args=("$@")
-    local -i index
-    for ((index = 1; index <= ${#args}; index++)); do
-      if [[ "${args[index]}" == --port ]]; then
-        port="${args[index + 1]}"
-        break
-      fi
-    done
-  fi
-
-  if [[ -n "$port" ]]; then
-    OPENCODE_PORT="$port" command opencode "$@"
-    return
-  fi
-
-  port=$(python3 -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1]); s.close()') || return
-  OPENCODE_PORT="$port" command opencode --port "$port" "$@"
+  # opencode v2 起顶层命令不再接受 --port（端口只在 `opencode serve --port` 上配）；
+  # TUI 改连后台 service，多开天然支持，不再需要每次随机端口。
+  command opencode "$@"
 }
 
 # TUI 里想选 muse 系列时用这个入口（始终走代理）

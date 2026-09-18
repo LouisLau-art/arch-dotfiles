@@ -19,6 +19,7 @@
 │   ├── default.custom.yaml      # 关键补丁：候选数 9 + Shift 直输英文
 │   ├── rime_ice.custom.yaml     # 雾凇开关默认（switches/@1/reset: 1）
 │   └── user.yaml.example        # user.yaml 脱敏结构示例
+│   # 注：wanxiang-lts-zh-hans.gram（约 401MB）仓库不收录，bootstrap.sh [4/5] 下载到 ~/.local/share/fcitx5/rime/
 ├── zellij/
 │   └── config.kdl               # zellij 终端复用器配置
 ├── zsh/
@@ -38,6 +39,9 @@
 │   └── oh-my-opencode-slim.json # oh-my-opencode-slim 预设
 ├── oh-my-opencode/
 │   └── oh-my-opencode.json.example # oh-my-opencode 角色模型映射
+├── makepkg/
+│   ├── makepkg-gh-mirror-curl   # GitHub 镜像下载包装器（makepkg DLAGENT，install.sh 装到 /usr/local/bin）
+│   └── github-mirror.conf       # 系统级 drop-in（/etc/makepkg.conf.d/，覆盖 DLAGENTS 的 http/https 下载器）
 ├── fontconfig/
 │   └── fonts.conf               # 字体配置（PingFang SC + Maple Mono NF CN）
 └── environment.d/
@@ -122,6 +126,37 @@ patch:
 | 中文模式下 | 左 Shift | 在中 / 英文模式之间切换 |
 
 > 记忆口诀：**要中文就空格 / 回车，要英文就左 Shift。**
+
+#### 语法模型（万象 LTS）
+
+方案：`rime_ice` + `librime-plugin-octagram` + 万象 LTS 语法模型 `wanxiang-lts-zh-hans.gram`（约 401MB，amzxyz/RIME-LMDG LTS tag 滚动更新，2026-09-05 版）。
+文件由 `bootstrap.sh [4/5]` 负责下载到 `~/.local/share/fcitx5/rime/`，仓库不收录 gram 文件本身。
+
+`rime/rime_ice.custom.yaml` 的 grammar 段（6/3/-14/-6/-100/-20）+ `contextual_suggestions: false` + `max_homophones: 8` 与上游 `others/recipes/grammar.recipe.yaml` 逐行一致；
+`translator/dictionary` 挂自建 `rime_ice_plus`（上游逐表 import + 扩展词库，因 librime `import_tables` 不递归）。
+
+生效验证三件套（2026-09-09 实测）：
+
+1. fcitx5 进程 fd mmap 着 `.gram`：
+   ```bash
+   ls -l /proc/$(pgrep fcitx5)/fd | grep gram
+   ```
+2. 部署产物含 grammar 声明：
+   ```bash
+   grep -n "grammar.language" ~/.local/share/fcitx5/rime/build/rime_ice.schema.yaml
+   ```
+3. 长句连拼看首选整句（短词单字测不出是正常的，模型只在 ≥2 音节无精确匹配时触发组句）：
+   - `tayoulianggehaizidouhencongming` → 首选「他有两个孩子都很聪明」
+   - `zhejiaqiyefazhanqianlijuda` → 首选「这家企业发展潜力巨大」
+
+版本答案：离线天花板是万象词库 + 自家 gram，当前 ice + gram 已是省心版天花板（差距约 1-2pp 句对率），除非转语句流 / 双拼辅码否则不切。
+白霜 rime-frost 是 ice 词库重制版，主攻无模型短词手感，可并行 A/B 共用同一 gram，不迁移；frost 的参数（contextual true 等）是别人家词库方子，别抄。
+
+养词：主 translator 默认开 `user_dict`（无 `enable_user_dict: false` 即启用），已在养，个人词频存 `rime_ice.userdb/`，正常用 2-4 周固化；`melt_eng` 与 `radical_lookup` 的 `false` 保持。备份靠 `sync/` 下与 `installation_id` 同名目录。
+
+单用户说明：fcitx5 是 per-user 守护进程，只有 louis 在跑，root 下无配置无进程，不需要同步；root 误起 fcitx5 会导致 Wayland 失效与权限污染（见 PITFALLS 第 3/15 章）。
+
+维护节奏：LTS tag 内滚动换文件，1-3 个月重下一次即可。
 
 ### 快捷键速查
 
@@ -210,6 +245,16 @@ omos() {
 - 锁屏幻灯片（同壁纸目录，900 秒）：`plasma/kscreenlockerrc` 整文件覆盖
 - Konsole：`Maple Mono NF CN 12pt`（`konsole/Profile 1.profile` + `konsolerc`）
 - 生效方式：Wayland 下重新登录；或 `kquitapp6 plasmashell && kstart plasmashell`
+
+### AUR 下载加速（makepkg/）
+
+`paru -S` / `makepkg` 从 GitHub Releases 拉源文件常年龟速（直连 ~10KB/s）。仓库收录 curl 包装器，`install.sh` 装到系统级路径，**root/louis 共用一份配置**：
+
+- `/usr/local/bin/makepkg-gh-mirror-curl`：仅改写 GitHub 系域名（github.com / raw / codeload / gist）；依次尝试 `gh-proxy.com` → `ghfast.top` → 直连，镜像 404 或低于 100KB/s 持续 20s 自动淘汰；非 GitHub 源直通
+- `/etc/makepkg.conf.d/github-mirror.conf`：覆盖 `DLAGENTS` 的 http/https 下载器（注意用户级 `~/.config/pacman/makepkg.conf` 会覆盖它，别两处都放）
+- 实测速度：gh-proxy 3~14MB/s ＞ ghfast ~3MB/s ＞ Clash 代理 ~0.5MB/s ＞ 直连 ~10KB/s（详见 PITFALLS 第 19 条）
+- 验证：含 GitHub 源的 PKGBUILD 跑 `makepkg --verifysource -f`，输出应出现 `:: 镜像加速`
+- `bootstrap.sh` [4/5] 的 Rime 资源下载与 rime-ice 克隆同样镜像优先
 
 ### 字体配置（/etc/fonts/local.conf）
 
@@ -359,7 +404,8 @@ omos() {
 | KDE Plasma | 6.x |
 | fcitx5 | 5.1.22 |
 | librime | 1:1.17.0 |
-| rime-ice | r993.fbb516b |
+| rime-ice | r993.fbb516b（+ librime-plugin-octagram） |
+| wanxiang-lts gram | LTS 2026-09-05（约 401MB，bootstrap.sh [4/5] 下载，仓库不收录） |
 | zellij | 0.45.1 |
 | opencode | 1.18.29 |
 | lark-cli | 1.0.94 |

@@ -298,6 +298,66 @@ d. 复发时采集 netlog 诊断：
 - 带 env 重启时环境变量必须齐全（同第 3 章教训），缺 `WAYLAND_DISPLAY`/`XDG_RUNTIME_DIR` 等会起不来或输入法失效
 - 问题会间歇性自愈，复发时先按预案处理，别急着改系统配置
 
+## 18. 重启后感觉语法模型没生效
+
+**症状**：短词单字打什么都一样，感觉模型没起作用；但长句连拼首选是稳的。
+
+**排查三步**（按顺序跑）：
+
+1. fcitx5 是否 mmap 着 `.gram`：
+   ```bash
+   ls -l /proc/$(pgrep fcitx5)/fd | grep gram
+   ```
+   无输出 = 模型没加载。
+2. 部署产物是否含 grammar 声明：
+   ```bash
+   grep -n "grammar.language" ~/.local/share/fcitx5/rime/build/rime_ice.schema.yaml
+   ```
+   无输出 = 部署被覆盖 / 没重新部署。
+3. 长句对照（只看首选整句，短词不算）：
+   - `tayoulianggehaizidouhencongming` → 应首选「他有两个孩子都很聪明」
+   - `zhejiaqiyefazhanqianlijuda` → 应首选「这家企业发展潜力巨大」
+
+**根因**：
+- 大多是期望错位：单字短词必然无差，模型只在 ≥2 音节无精确匹配时触发组句，短词测不出是正常的。
+- 若长句也不对，再查两件事：是否 root 误起了 fcitx5（进程用户错了）；`build/` 是否被重部署覆盖（重跑一次部署再查第 2 步）。
+
+**明确不要动的**：
+- `collocation_penalty` / `non_collocation_penalty` / `weak_collocation_penalty` / `rear_penalty` 等 penalty 参数
+- `contextual_suggestions: false`（frost 的 true 是别人家词库方子，别抄）
+- 不要换 gram 文件、不要加云插件，当前 ice + 万象 LTS 已是省心版天花板
+
+详见第 3 章（sudo 重启失效）与第 15 章（root 权限污染）。
+
+## 19. AUR / paru 从 GitHub 下载龟速
+
+**问题**：`paru -S <包>` 卡在 `Downloading xxx.tar.xz`，大包（如 beekeeper-studio 196MB）只有 12KB/s、ETA 4 小时。
+
+**原因**：PKGBUILD 的 `source` 指向 `github.com/*/releases/download/*` 等 GitHub 资源，国内直连常年十几 KB/s；makepkg 默认不走代理，而 Clash(7897) 实测也只有 ~0.5MB/s。
+
+**解决**（系统级一次配置，root/louis/新用户都生效；仓库 `makepkg/` 收录，install.sh 自动恢复）：
+- wrapper `/usr/local/bin/makepkg-gh-mirror-curl` + drop-in `/etc/makepkg.conf.d/github-mirror.conf`（覆盖 `DLAGENTS` 的 http/https 下载器）
+- 行为：GitHub 系 URL 依次试 `gh-proxy.com` → `ghfast.top` → 直连；镜像 404 或低于 100KB/s 持续 20s 自动换下一个；非 GitHub 源零开销直通
+- 实测：gh-proxy 3~14MB/s ＞ ghfast ~3MB/s ＞ Clash 代理 ~0.5MB/s ＞ 直连 ~10KB/s
+- `bootstrap.sh` 第 [4/5] 步的 `dl()` / `wrap_thuocl()` 与 rime-ice 克隆同样改为镜像优先
+
+**应急**（不改配置，把源文件预热进 paru 构建目录即可）：
+
+```bash
+dir=~/.cache/paru/clone/<包名>
+grep -A5 '^source' "$dir/PKGBUILD"      # 注意 `文件名::URL` 语法，落地名取 :: 左边
+curl -L -o "$dir/<文件名>" "https://gh-proxy.com/<原始URL>"
+sha256sum "$dir/<文件名>"               # 必须与 PKGBUILD 的 sha256sums(_$CARCH) 一致
+```
+
+Ctrl+C 后重跑 paru，makepkg 见同名文件直接 `Found` 跳过下载（只认最终文件名；`.part` 残留可删）。
+
+**坑**：
+- 预热文件校验和必须匹配，否则 makepkg 重新下载；属主要与构建用户一致（构建目录出现过 root 属主文件）
+- ghproxy.net 别用（实测 4KB/s，会被限速阈值淘汰）
+- VCS 源（-git 包）走 `git clone`，不经 DLAGENTS，本方案覆盖不到（makepkg 还会屏蔽用户级 git 配置）
+- `~/.config/pacman/makepkg.conf` 会覆盖系统级 drop-in，同一项别两处都放
+
 ---
 
 ## 通用教训
@@ -310,3 +370,5 @@ d. 复发时采集 netlog 诊断：
 6. **skills 装全局**：加 `-g`，不然只有当前项目能用
 7. **root 操作后检查文件权限**：root session 写过的配置目录用 `chown -R` 修复
 8. **DNS 问题用 `resolvectl status` 排查**：看到不可达的 nameserver 就用 `nmcli` 覆盖
+9. **语法模型只看长句首选，短词测不出**：单字短词必然无差，验证只看长句连拼首选整句
+10. **GitHub 大文件优先走 gh-proxy 镜像**：实测 3~14MB/s，比直连快三个数量级、比代理快一个数量级；AUR/makepkg/bootstrap 均已接入（第 19 条）

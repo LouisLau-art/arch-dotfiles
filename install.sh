@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# fcitx5 + Rime + zellij + opencode + zsh/starship + konsole + plasma 美化一键恢复脚本（幂等，可重复执行）
+# fcitx5 + Rime + zellij + opencode + zsh/starship + konsole + plasma 美化 + makepkg GitHub 镜像加速 一键恢复脚本（幂等，可重复执行）
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -138,6 +138,18 @@ cp -a "${SCRIPT_DIR}/opencode/oh-my-opencode-slim.json" "${OPENCODE_CONFIG_DIR}/
 #   cp opencode/opencode.json.example ~/.config/opencode/opencode.json
 #   cp oh-my-opencode/oh-my-opencode.json.example ~/.config/oh-my-opencode/oh-my-opencode.json
 # （本机现有文件已在上面备份，可放心操作）
+
+echo "==> 安装 makepkg GitHub 镜像加速（系统级：AUR 源自动走镜像，root/louis 同步）"
+MAKEPKG_WRAPPER="/usr/local/bin/makepkg-gh-mirror-curl"
+MAKEPKG_DROPIN="/etc/makepkg.conf.d/github-mirror.conf"
+if command -v makepkg >/dev/null 2>&1; then
+  sudo install -Dm755 "${SCRIPT_DIR}/makepkg/makepkg-gh-mirror-curl" "${MAKEPKG_WRAPPER}"
+  sudo install -Dm644 "${SCRIPT_DIR}/makepkg/github-mirror.conf" "${MAKEPKG_DROPIN}"
+  echo "已安装: ${MAKEPKG_WRAPPER}"
+  echo "已安装: ${MAKEPKG_DROPIN}（覆盖 DLAGENTS 的 http/https 下载器）"
+else
+  echo "提示: 未检测到 makepkg（非 Arch 系），跳过；wrapper 仍保留在 makepkg/ 目录供手动使用。"
+fi
 
 echo ""
 echo "安装完成！备份位置："
